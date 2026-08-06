@@ -16,6 +16,11 @@ tokens/
 *_debug.txt
 diag_debug.txt
 *.har
+capture_approve.py
+capture_har.py
+diag_token.py
+test_http_login.py
+_test_*.py
 
 # Python and local tooling
 __pycache__/
