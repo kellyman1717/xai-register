@@ -206,7 +206,12 @@ def solve_via_boterdrop(timeout=120):
                     )
                     return None
                 if r.status_code == 429 or r.status_code >= 500:
-                    # server busy — back off (capped) with jitter, then retry
+                    # server busy — back off (capped) with jitter, then retry.
+                    # Cap total wait so a jammed server doesn't stall the whole
+                    # pipeline: give up after ~20s of consecutive 429s.
+                    if time.time() - t0 > 20:
+                        log.warning("Boterdrop: still busy after 20s — giving up this solve")
+                        return None
                     time.sleep(min(5.0, 1.0 * attempt) + random.uniform(0, 0.8))
                     continue
                 try:
