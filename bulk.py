@@ -13,7 +13,11 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+CORE_DIR = os.path.join(PROJECT_DIR, "core")
+for _path in (PROJECT_DIR, CORE_DIR):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 from register import (
     ACCOUNTS_JSON,

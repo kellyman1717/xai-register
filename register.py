@@ -22,6 +22,12 @@ Usage:
 
 import requests, json, base64, time, uuid, re, sys, os, random, argparse, logging, threading
 from datetime import datetime, timezone
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+CORE_DIR = os.path.join(BASE, "core")
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+
 import router9  # optional auto-push ke 9Router DB (aktif via config router9.enabled)
 from _interactive import run_session
 
@@ -37,9 +43,6 @@ for _stream in (sys.stdout, sys.stderr):
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("xai-register")
-
-BASE = os.path.dirname(os.path.abspath(__file__))
-
 
 def _load_config():
     config_path = os.path.join(BASE, "config.json")

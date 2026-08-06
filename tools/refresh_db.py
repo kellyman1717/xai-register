@@ -9,10 +9,10 @@ Penulisan ke SQLite tetap diserialkan di thread utama (SQLite tidak aman
 untuk ditulis banyak thread sekaligus) — jadi cepat sekaligus aman.
 
 Usage:
-  python3 refresh_db.py                 # refresh semua yang expired
-  python3 refresh_db.py --all           # refresh SEMUA (walau masih valid)
-  python3 refresh_db.py --check         # cek saja, tanpa refresh
-  python3 refresh_db.py -c 16           # atur jumlah paralel (default 8)
+  python3 tools/refresh_db.py                 # refresh semua yang expired
+  python3 tools/refresh_db.py --all           # refresh SEMUA (walau masih valid)
+  python3 tools/refresh_db.py --check         # cek saja, tanpa refresh
+  python3 tools/refresh_db.py -c 16           # atur jumlah paralel (default 8)
 """
 
 import json, sqlite3, sys, os, time, argparse, base64, threading
@@ -20,7 +20,7 @@ import requests
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.expanduser("~/.9router/db/data.sqlite")
 CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
 TOKEN_URL = "https://auth.x.ai/oauth2/token"

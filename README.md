@@ -13,6 +13,30 @@ CLI untuk registrasi akun xAI/Grok dengan dashboard Rich, dukungan batch, dan pe
 - Penyimpanan akun dan token lokal.
 - Push opsional ke FoxRouters dan 9Router.
 
+## Struktur proyek
+
+Entry point tetap berada di root agar perintah utama tetap sederhana:
+
+```text
+xai-register/
+├── register.py          # registrasi interaktif / single run
+├── bulk.py              # registrasi bulk
+├── core/                # modul internal runtime
+│   ├── approve.py
+│   ├── approve_http.py
+│   ├── http_login.py
+│   ├── router9.py
+│   ├── solver.py
+│   ├── ui.py
+│   └── _interactive.py
+└── tools/               # utility pemeliharaan opsional
+    ├── inject_9router.py
+    ├── refresh_db.py
+    └── refresh_tokens.py
+```
+
+File akun, token, database, dan log diagnosis tetap berada di luar repository melalui `.gitignore`.
+
 ## Persyaratan
 
 - Python 3.10 atau lebih baru.
@@ -132,6 +156,19 @@ python register.py -n 5 --no-ui
 
 Gunakan password melalui konfigurasi lokal atau parameter yang aman bagi lingkungan Anda. Jangan menyimpan password di script atau command history bila terminal Anda mencatat riwayat perintah.
 
+### Utility pemeliharaan opsional
+
+```powershell
+# Refresh token yang tersimpan di accounts.json atau tokens/
+python tools/refresh_tokens.py --expired-only
+
+# Refresh koneksi token di database 9Router
+python tools/refresh_db.py --check
+
+# Inject file token ke database 9Router
+python tools/inject_9router.py
+```
+
 ## File hasil lokal
 
 File berikut dibuat saat program berjalan dan sengaja tidak masuk repository:
@@ -147,8 +184,8 @@ Jika salah satu token atau password pernah terlanjur dipublikasikan, segera rota
 ## Pengujian dasar
 
 ```powershell
-python -m py_compile ui.py _interactive.py register.py bulk.py
-python _interactive.py
+python -m compileall core register.py bulk.py tools
+python core/_interactive.py
 ```
 
 Perintah tersebut memeriksa sintaks dan self-check prompt interaktif tanpa membuat akun baru.

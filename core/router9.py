@@ -27,12 +27,13 @@ for _stream in (sys.stdout, sys.stderr):
         pass
 
 DEFAULT_DB_PATH = os.path.expanduser("~/.9router/db/data.sqlite")
-TOKENS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens")
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOKENS_DIR = os.path.join(PROJECT_DIR, "tokens")
 SCOPE = "openid profile email offline_access grok-cli:access api:access conversations:read conversations:write"
 
 
 def _load_config():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+    path = os.path.join(PROJECT_DIR, "config.json")
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)

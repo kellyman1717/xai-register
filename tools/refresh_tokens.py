@@ -3,11 +3,11 @@
 Refresh xAI/Grok OAuth Tokens
 ==========================
 Usage:
-  python refresh_tokens.py                      # accounts.json (default)
-  python refresh_tokens.py accounts.json
-  python refresh_tokens.py tokens/              # all token files
-  python refresh_tokens.py tokens/alex.json     # single file
-  python refresh_tokens.py --expired-only       # skip still-valid ATs
+  python tools/refresh_tokens.py                      # accounts.json (default)
+  python tools/refresh_tokens.py accounts.json
+  python tools/refresh_tokens.py tokens/              # all token files
+  python tools/refresh_tokens.py tokens/alex.json     # single file
+  python tools/refresh_tokens.py --expired-only       # skip still-valid ATs
 """
 
 import requests, json, sys, os, time, base64
@@ -19,7 +19,7 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
-BASE = os.path.dirname(os.path.abspath(__file__))
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 with open(os.path.join(BASE, "config.json"), encoding="utf-8") as f:
     CFG = json.load(f)

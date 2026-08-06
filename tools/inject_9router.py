@@ -11,8 +11,9 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.expanduser("~/.9router/db/data.sqlite")
-TOKENS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens")
+TOKENS_DIR = os.path.join(PROJECT_DIR, "tokens")
 SCOPE = "openid profile email offline_access grok-cli:access api:access conversations:read conversations:write"
 
 def inject_token(token_file, db_path=DB_PATH):

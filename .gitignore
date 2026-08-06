@@ -19,6 +19,8 @@ diag_debug.txt
 capture_approve.py
 capture_har.py
 diag_token.py
+_diag_*.py
+_resp.bin
 test_http_login.py
 _test_*.py
 
