@@ -15,6 +15,13 @@
   "client_id": "b1a00492-073a-47ea-816f-4c329264a828",
   "sitekey": "0x4AAAAAAAhr9JGVDZbrZOo0",
   "email_domains": ["yourdomain.com", "otherdomain.com"],
+  "gmail": {
+    "user": "",
+    "password": "",
+    "imap_host": "imap.gmail.com",
+    "imap_port": 993,
+    "poll_interval": 2
+  },
   "default_password": "",
   "tokens_dir": "tokens",
   "accounts_file": "accounts.jsonl",

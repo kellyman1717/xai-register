@@ -23,6 +23,13 @@ Usage:
 import requests, json, base64, time, uuid, re, sys, os, random, argparse, logging, threading
 from datetime import datetime, timezone
 
+try:
+    import imaplib
+    import email as email_lib
+    from email.header import decode_header
+except ImportError:  # pragma: no cover - stdlib
+    imaplib = None
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 CORE_DIR = os.path.join(BASE, "core")
 if CORE_DIR not in sys.path:
@@ -80,6 +87,16 @@ SITEKEY          = CFG.get("sitekey", "0x4AAAAAAAhr9JGVDZbrZOo0")
 DOMAINS          = CFG.get("email_domains", [CFG.get("email_domain", "yourdomain.com")])
 DOMAIN           = DOMAINS[0]
 DEF_PASS         = CFG.get("default_password", "")
+# Gmail dottrick: satu inbox Gmail dipakai untuk banyak akun xAI lewat variasi
+# titik di local-part (mis. `j.doe.1234x56@gmail.com` → `jd.oe.1234x56@gmail.com`).
+# OTP dibaca via IMAP dengan App Password — `gmail.user` wajib, `gmail.password`
+# bisa diisi di config atau di-prompt saat runtime (disimpan ke GMAIL_PASSWORD).
+GMAIL_CFG        = CFG.get("gmail", {})
+GMAIL_USER       = GMAIL_CFG.get("user", "").strip()
+GMAIL_PASSWORD   = GMAIL_CFG.get("password", "").strip()
+GMAIL_IMAP_HOST  = GMAIL_CFG.get("imap_host", "imap.gmail.com")
+GMAIL_IMAP_PORT  = int(GMAIL_CFG.get("imap_port", 993))
+GMAIL_POLL_OTP   = float(GMAIL_CFG.get("poll_interval", 2.0) or 2.0)
 TOKENS_DIR       = CFG.get("tokens_dir", os.path.join(BASE, "tokens"))
 ACCTS_FILE       = CFG.get("accounts_file", os.path.join(BASE, "accounts.jsonl"))
 ACCOUNTS_JSON        = CFG.get("accounts_json", os.path.join(BASE, "accounts.json"))            # file 1: email + password
@@ -372,9 +389,67 @@ def solve_turnstile():
     return None
 
 
-# ─── OTP polling (Cloudflare D1) ──────────────────────────────
+# ─── OTP polling (Cloudflare D1 / Gmail IMAP) ─────────────────
+
+def _gmail_normalize(email):
+    """Gmail mengabaikan titik di local-part: `j.doe+x@gmail.com` → `jdoe@gmail.com`."""
+    local, _, domain = email.partition("@")
+    if domain.lower() != "gmail.com":
+        return email
+    local = local.split("+")[0].replace(".", "").lower()
+    return f"{local}@gmail.com"
+
+
+def _gmail_imap_fetch_otp(email, wait=90):
+    """Poll OTP dari inbox Gmail via IMAP (butuh App Password).
+
+    Gmail dottrick: xAI mengirim ke `j.doe.1234x56@gmail.com`, tapi di inbox
+    Gmail semuanya tiba di `jdoe@gmail.com` (titik diabaikan Gmail).
+    """
+    if imaplib is None:
+        log.error("imaplib tidak tersedia — Gmail OTP tidak bisa dipakai")
+        return None
+    if not GMAIL_PASSWORD:
+        print("    ❌ Gmail OTP butuh App Password — set gmail.password di config.json")
+        return None
+    base = _gmail_normalize(email)
+    t0 = time.time()
+    while time.time() - t0 < wait:
+        try:
+            conn = imaplib.IMAP4_SSL(GMAIL_IMAP_HOST, GMAIL_IMAP_PORT, timeout=20)
+            try:
+                conn.login(GMAIL_USER, GMAIL_PASSWORD)
+                conn.select("INBOX")
+                # Cari email dari xAI yang belum dibaca, ke alamat dasar Gmail.
+                _, data = conn.search(None, "UNSEEN", f'TO "{base}"')
+                for num in (data[0] or b"").split():
+                    _, msg_data = conn.fetch(num, "(RFC822)")
+                    raw = msg_data[0][1]
+                    msg = email_lib.message_from_bytes(raw)
+                    subj_parts = decode_header(msg.get("Subject", ""))
+                    subject = "".join(
+                        b.decode(charset or "utf-8", errors="replace")
+                        if isinstance(b, bytes) else str(b)
+                        for b, charset in subj_parts
+                    )
+                    m = re.search(r"\b([A-Z0-9]{2,4}-[A-Z0-9]{2,4})\b", subject)
+                    if m:
+                        return m.group(1)
+            finally:
+                try:
+                    conn.logout()
+                except Exception:
+                    pass
+        except Exception as e:
+            log.debug(f"Gmail IMAP error: {e}")
+        time.sleep(GMAIL_POLL_OTP)
+    return None
+
 
 def poll_otp(email, wait=90):
+    """Ambil OTP: Gmail dottrick → IMAP; domain lain → Cloudflare D1."""
+    if email and email.split("@")[-1].lower() == "gmail.com":
+        return _gmail_imap_fetch_otp(email, wait=wait)
     headers = {"Authorization": f"Bearer {D1_TOKEN}", "Content-Type": "application/json"}
     seen = set()
     t0 = time.time()
@@ -465,6 +540,10 @@ _ADJ = [
 
 
 def rand_email():
+    # Gmail dottrick aktif otomatis saat gmail.user dikonfigurasi:
+    # semua variasi titik tetap masuk ke inbox Gmail yang sama.
+    if GMAIL_USER:
+        return rand_gmail_email()
     domain = random.choice(DOMAINS)
     # High-entropy suffix so we don't collide with already-registered emails.
     # (~ tens of millions of variants per name combo instead of just 99.)
@@ -475,6 +554,26 @@ def rand_email():
     if s == 1:
         return f"{random.choice(_ADJ)}.{random.choice(_NAMES)}{tail}@{domain}"
     return f"{random.choice(_NAMES)}_{random.choice(_ADJ)}{tail}@{domain}"
+
+
+def rand_gmail_email():
+    """Buat alamat Gmail dottrick unik dari satu akun Gmail.
+
+    Gmail mengabaikan titik di local-part, jadi `a.bc123x45@gmail.com` dan
+    `ab.c123x45@gmail.com` sama-sama tiba di `abc@gmail.com`. Variasi posisi
+    titik + suffix numerik memberi banyak alamat unik per akun.
+    """
+    base = _gmail_normalize(GMAIL_USER).split("@")[0]
+    # Ambil 2 kata pendek dari nama Gmail (mis. `john.doe` → `john.doe`).
+    name = re.sub(r"[^a-z0-9]", "", base.lower())
+    if not name:
+        name = "user"
+    tail = f"{random.randint(100, 9999)}{random.choice('abcdefghijklmnopqrstuvwxyz')}{random.randint(10, 99)}"
+    # Gabungkan nama + tail, lalu sisipkan titik di posisi acak (dottrick).
+    core = name + tail
+    pos = random.randint(1, len(core) - 1)
+    dotted = f"{core[:pos]}.{core[pos:]}"
+    return f"{dotted}@gmail.com"
 
 
 def dec_jwt(token):

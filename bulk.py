@@ -25,6 +25,8 @@ from register import (
     BOTERDROP_URL,
     FOX_KEY,
     FOX_URL,
+    GMAIL_PASSWORD,
+    GMAIL_USER,
     R9_ENABLED,
     R9_DB_PATH,
     _auto_concurrency,
@@ -161,6 +163,16 @@ def main():
     if not args.no_ui:
         from ui import Dashboard
         dashboard = Dashboard(total=args.count)
+
+    # Gmail dottrick: kalau gmail.user dikonfigurasi tapi App Password kosong,
+    # minta sekali sebelum worker jalan (password hanya di memori, tidak disimpan).
+    if GMAIL_USER and not GMAIL_PASSWORD:
+        import register as R
+        from getpass import getpass
+        R.GMAIL_PASSWORD = getpass("App Password Gmail (untuk OTP IMAP): ").strip()
+        if not R.GMAIL_PASSWORD:
+            print("⚠️  Tanpa App Password, OTP Gmail tidak akan bisa diambil.")
+        GMAIL_PASSWORD = R.GMAIL_PASSWORD
 
     try:
         if len(sys.argv) == 1:
