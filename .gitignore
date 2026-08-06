@@ -1,0 +1,37 @@
+# Local configuration and secrets
+config.json
+*.env
+.env
+.env.*
+
+# Generated account data and OAuth tokens
+accounts.json
+accounts.jsonl
+accounts_tokens.json
+accounts.json.bak
+old-accounts.json
+tokens/
+
+# Local diagnostics and debug captures
+*_debug.txt
+diag_debug.txt
+*.har
+
+# Python and local tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.commandcode/
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

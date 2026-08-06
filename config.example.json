@@ -1,0 +1,29 @@
+{
+  "d1": {
+    "url": "https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/d1/database/DB_ID/query",
+    "token": "YOUR_CF_API_TOKEN"
+  },
+  "twocaptcha_key": "",
+  "capsolver_key": "",
+  "boterdrop_url": "http://127.0.0.1:8005",
+  "boterdrop_max_concurrent": 3,
+  "http_approve": false,
+  "turnstile_solver": {
+    "pool_size": 2,
+    "headless": true
+  },
+  "client_id": "b1a00492-073a-47ea-816f-4c329264a828",
+  "sitekey": "0x4AAAAAAAhr9JGVDZbrZOo0",
+  "email_domains": ["yourdomain.com", "otherdomain.com"],
+  "default_password": "",
+  "tokens_dir": "tokens",
+  "accounts_file": "accounts.jsonl",
+  "foxrouter": {
+    "url": "",
+    "key": ""
+  },
+  "router9": {
+    "enabled": false,
+    "db_path": "~/.9router/db/data.sqlite"
+  }
+}
